@@ -224,7 +224,7 @@ def main():
     if dpi and not dpi.isdigit():
         usage('invalid DPI')
         sys.exit(1)
-    if not imgfmt in {'png', 'svg'}:
+    if not imgfmt in ('png', 'svg'):
         usage('Invalid image format. Valid values are "png" or "svg".')
         sys.exit(1)
     if outfile is None:
