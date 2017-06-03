@@ -53,7 +53,7 @@ under the terms of the GNU General Public License (GPL).
 """
 
 import sys,os,re,imp
-from distutils.version import LooseVersion
+from distutils.version import LooseVersion as Version
 
 API_VERSION = '0.1.2'
 MIN_ASCIIDOC_VERSION = '8.4.1'  # Minimum acceptable AsciiDoc version.
@@ -90,41 +90,6 @@ class Options(object):
         if type(value) in (int,float):
             value = str(value)
         self.values.append((name,value))
-
-
-class Version(LooseVersion):
-    """
-    Parse and compare AsciiDoc version numbers. Instance attributes:
-
-    string: String version number '<major>.<minor>[.<micro>][suffix]'.
-    major:  Integer major version number.
-    minor:  Integer minor version number.
-    micro:  Integer micro version number.
-    suffix: Suffix (begins with non-numeric character) is ignored when
-            comparing.
-
-    Doctest examples:
-
-    >>> Version('8.2.5') < Version('8.3 beta 1')
-    True
-    >>> Version('8.3.0') == Version('8.3. beta 1')
-    True
-    >>> Version('8.2.0') < Version('8.20')
-    True
-    >>> Version('8.20').major
-    8
-    >>> Version('8.20').minor
-    20
-    >>> Version('8.20').micro
-    0
-    >>> Version('8.20').suffix
-    ''
-    >>> Version('8.20 beta 1').suffix
-    'beta 1'
-
-    """
-    pass
-
 
 
 class AsciiDocAPI(object):
@@ -173,22 +138,21 @@ class AsciiDocAPI(object):
         quite complicated.
         '''
         if os.path.splitext(self.cmd)[1] in ['.py','.pyc']:
-            sys.path.append(os.path.abspath(os.path.dirname(self.cmd)))
-            import asciidoc
-            self.asciidoc = asciidoc
-        #    sys.path.insert(0, os.path.dirname(self.cmd))
-        #    try:
-        #        try:
-        #            if reload:
-        #                import __builtin__  # Because reload() is shadowed.
-        #                __builtin__.reload(self.asciidoc)
-        #            else:
-        #                import asciidoc
-        #                self.asciidoc = asciidoc
-        #        except ImportError:
-        #            raise AsciiDocError('failed to import ' + self.cmd)
-        #    finally:
-        #        del sys.path[0]
+            sys.path.insert(0, os.path.dirname(self.cmd))
+            try:
+                if reload:
+                    try:
+                        from importlib import reload as reload_module
+                    except ImportError:
+                        from imp import reload as reload_module
+                    reload_module(self.asciidoc)
+                else:
+                    import asciidoc
+                    self.asciidoc = asciidoc
+            except ImportError:
+                raise AsciiDocError('failed to import ' + self.cmd)
+            finally:
+                del sys.path[0]
         else:
             # The import statement can only handle .py or .pyc files, have to
             # use imp.load_source() for scripts with other names.
