@@ -28,7 +28,7 @@ VERSION = '8.6.9'
 
 # AsciiDoc global configuration file directory.
 # NOTE: CONF_DIR is "fixed up" by Makefile -- don't rename or change syntax.
-CONF_DIR = '/etc/asciidoc'
+CONF_DIR = '/usr/local/etc/asciidoc'
 
 
 ######################################################################
@@ -649,7 +649,7 @@ class A2X(AttrDict):
         shell('"%s" --backend docbook -a "a2x-format=%s" %s --out-file "%s" "%s"' %
              (self.asciidoc, self.format, self.asciidoc_opts, docbook_file, self.asciidoc_file))
         if not self.no_xmllint and XMLLINT:
-            shell('"%s" --nonet --noout --valid "%s"' % (XMLLINT, docbook_file))
+            shell('"%s" --noout --valid "%s"' % (XMLLINT, docbook_file))
 
     def to_xhtml(self):
         self.to_docbook()

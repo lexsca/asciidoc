@@ -53,6 +53,7 @@ under the terms of the GNU General Public License (GPL).
 """
 
 import sys,os,re,imp
+from distutils.version import LooseVersion
 
 API_VERSION = '0.1.2'
 MIN_ASCIIDOC_VERSION = '8.4.1'  # Minimum acceptable AsciiDoc version.
@@ -91,7 +92,7 @@ class Options(object):
         self.values.append((name,value))
 
 
-class Version(object):
+class Version(LooseVersion):
     """
     Parse and compare AsciiDoc version numbers. Instance attributes:
 
@@ -122,23 +123,8 @@ class Version(object):
     'beta 1'
 
     """
-    def __init__(self, version):
-        self.string = version
-        reo = re.match(r'^(\d+)\.(\d+)(\.(\d+))?\s*(.*?)\s*$', self.string)
-        if not reo:
-            raise ValueError('invalid version number: %s' % self.string)
-        groups = reo.groups()
-        self.major = int(groups[0])
-        self.minor = int(groups[1])
-        self.micro = int(groups[3] or '0')
-        self.suffix = groups[4] or ''
-    def __cmp__(self, other):
-        result = cmp(self.major, other.major)
-        if result == 0:
-            result = cmp(self.minor, other.minor)
-            if result == 0:
-                result = cmp(self.micro, other.micro)
-        return result
+    pass
+
 
 
 class AsciiDocAPI(object):
@@ -187,19 +173,22 @@ class AsciiDocAPI(object):
         quite complicated.
         '''
         if os.path.splitext(self.cmd)[1] in ['.py','.pyc']:
-            sys.path.insert(0, os.path.dirname(self.cmd))
-            try:
-                try:
-                    if reload:
-                        import __builtin__  # Because reload() is shadowed.
-                        __builtin__.reload(self.asciidoc)
-                    else:
-                        import asciidoc
-                        self.asciidoc = asciidoc
-                except ImportError:
-                    raise AsciiDocError('failed to import ' + self.cmd)
-            finally:
-                del sys.path[0]
+            sys.path.append(os.path.abspath(os.path.dirname(self.cmd)))
+            import asciidoc
+            self.asciidoc = asciidoc
+        #    sys.path.insert(0, os.path.dirname(self.cmd))
+        #    try:
+        #        try:
+        #            if reload:
+        #                import __builtin__  # Because reload() is shadowed.
+        #                __builtin__.reload(self.asciidoc)
+        #            else:
+        #                import asciidoc
+        #                self.asciidoc = asciidoc
+        #        except ImportError:
+        #            raise AsciiDocError('failed to import ' + self.cmd)
+        #    finally:
+        #        del sys.path[0]
         else:
             # The import statement can only handle .py or .pyc files, have to
             # use imp.load_source() for scripts with other names.
@@ -243,7 +232,7 @@ class AsciiDocAPI(object):
                 self.asciidoc.execute(self.cmd, opts.values, args)
             finally:
                 self.messages = self.asciidoc.messages[:]
-        except SystemExit, e:
+        except SystemExit as e:
             if e.code:
                 raise AsciiDocError(self.messages[-1])
 

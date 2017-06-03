@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 USAGE = '''Usage: testasciidoc.py [OPTIONS] COMMAND
 
 Run AsciiDoc conformance tests specified in configuration FILE.
@@ -28,7 +30,10 @@ if sys.platform[:4] == 'java':
     # Jython cStringIO is more compatible with CPython StringIO.
     import cStringIO as StringIO
 else:
-    import StringIO
+  try:
+      import StringIO as StringIO
+  except ImportError:
+      import io as StringIO
 
 import asciidocapi
 
@@ -45,7 +50,7 @@ def iif(condition, iftrue, iffalse=None):
     False value defaults to 0 if the true value is a number.
     """
     if iffalse is None:
-        if isinstance(iftrue, basestring):
+        if isinstance(iftrue, str):
             iffalse = ''
         if type(iftrue) in (int, float):
             iffalse = 0
@@ -55,7 +60,7 @@ def iif(condition, iftrue, iffalse=None):
         return iffalse
 
 def message(msg=''):
-    print >>sys.stderr, msg
+    print(msg, file=sys.stderr)
 
 def strip_end(lines):
     """
@@ -153,7 +158,7 @@ class AsciiDocTest(object):
                 elif directive == 'options':
                     self.options = eval(' '.join(data))
                     for i,v in enumerate(self.options):
-                        if isinstance(v, basestring):
+                        if isinstance(v, str):
                             self.options[i] = (v,None)
                 elif directive == 'attributes':
                     self.attributes.update(eval(' '.join(data)))
@@ -214,11 +219,11 @@ class AsciiDocTest(object):
         """
         lines = self.generate_expected(backend)
         if not os.path.isdir(self.datadir):
-            print('CREATING: %s' % self.datadir)
+            print('CREATING: {0}'.format(self.datadir))
             os.mkdir(self.datadir)
         f = open(self.backend_filename(backend),'w+')
         try:
-            print('WRITING: %s' % f.name)
+            print('WRITING: {0}'.format(f.name))
             f.writelines([ s + os.linesep for s in lines])
         finally:
             f.close()
@@ -246,9 +251,9 @@ class AsciiDocTest(object):
             backends = [backend]
         result = True   # Assume success.
         self.passed = self.failed = self.skipped = 0
-        print('%d: %s' % (self.number, self.title))
+        print('{0}: {1}'.format(self.number, self.title))
         if self.source and os.path.isfile(self.source):
-            print('SOURCE: asciidoc: %s' % self.source)
+            print('SOURCE: asciidoc: {0}'.format(self.source))
             for backend in backends:
                 fromfile = self.backend_filename(backend)
                 if not self.is_missing(backend):
@@ -263,7 +268,7 @@ class AsciiDocTest(object):
                         result = False
                         self.failed +=1
                         lines = lines[3:]
-                        print('FAILED: %s: %s' % (backend, fromfile))
+                        print('FAILED: {0}: {1}'.format(backend, fromfile))
                         message('+++ %s' % fromfile)
                         message('--- got')
                         for line in lines:
@@ -271,14 +276,14 @@ class AsciiDocTest(object):
                         message()
                     else:
                         self.passed += 1
-                        print('PASSED: %s: %s' % (backend, fromfile))
+                        print('PASSED: {0}: {1}'.format(backend, fromfile))
                 else:
                     self.skipped += 1
-                    print('SKIPPED: %s: %s' % (backend, fromfile))
+                    print('SKIPPED: {0}: {1}'.format(backend, fromfile))
         else:
             self.skipped += len(backends)
             if self.source:
-                msg = 'MISSING: %s' % self.source
+                msg = 'MISSING: {0}'.format(self.source)
             else:
                 msg = 'NO ASCIIDOC SOURCE FILE SPECIFIED'
             print(msg)
@@ -336,11 +341,11 @@ class AsciiDocTests(object):
                 self.failed += test.failed
                 self.skipped += test.skipped
         if self.passed > 0:
-            print('TOTAL PASSED:  %s' % self.passed)
+            print('TOTAL PASSED:  {0}'.format(self.passed))
         if self.failed > 0:
-            print('TOTAL FAILED:  %s' % self.failed)
+            print('TOTAL FAILED:  {0}'.format(self.failed))
         if self.skipped > 0:
-            print('TOTAL SKIPPED: %s' % self.skipped)
+            print('TOTAL SKIPPED: {0}'.format(self.skipped))
 
     def update(self, number=None, backend=None, force=False):
         """
@@ -355,7 +360,7 @@ class AsciiDocTests(object):
         Lists tests to stdout.
         """
         for test in self.tests:
-            print '%d: %s%s' % (test.number, iif(test.disabled,'!'), test.title)
+            print('{0:d}: {1}{2}'.format(test.number, iif(test.disabled,'!'), test.title))
 
 
 class Lines(list):
